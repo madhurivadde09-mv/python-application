@@ -58,7 +58,11 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          DOCKER_BUILDKIT=0 docker build -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" .
+          if [ -z "${ECR_REPOSITORY}" ]; then
+            echo "ERROR: ECR_REPOSITORY_NAME secret is not set or is empty."
+            exit 1
+          fi
+          docker build -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" .
           docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
 
       - name: Update ECS service
