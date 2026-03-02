@@ -25,10 +25,19 @@ jobs:
       - name: Test (pytest)
         run: pytest tests/ -v
 
-  build-and-push:
+  build:
     needs: lint-and-test
     runs-on: ubuntu-latest
-    # Deploy steps need AWS secrets; job will fail until you add them
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t fastapi-app:${{ github.sha }} .
+
+  build-and-push:
+    needs: build
+    if: false  # Set to true when AWS is ready; add secrets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, ECR_REPOSITORY_NAME, ECS_CLUSTER_NAME, ECS_SERVICE_NAME
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
