@@ -1,0 +1,14 @@
+# Excluded from Docker build context (not needed for image)
+.git
+.venv
+venv
+.env
+.env.example
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+*.md
+.github
+scripts
+tests
