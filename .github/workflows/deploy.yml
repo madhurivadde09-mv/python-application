@@ -55,11 +55,11 @@ jobs:
       - name: Build and push
         env:
           ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           if [ -z "${ECR_REPOSITORY}" ]; then
-            echo "ERROR: ECR_REPOSITORY_NAME secret is not set or is empty."
+            echo "ERROR: ECR_REPOSITORY secret is not set or is empty."
             exit 1
           fi
           docker build -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" .
