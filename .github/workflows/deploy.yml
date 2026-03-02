@@ -56,12 +56,6 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Debug
-        run: |
-          echo "ECR_REGISTRY=$ECR_REGISTRY"
-          echo "ECR_REPOSITORY=$ECR_REPOSITORY"
-          echo "IMAGE_TAG=${{ github.sha }}"
-
       - name: Build and push
         env:
           ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
@@ -71,7 +65,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Update ECS service
-        run: 
+        run: |
           aws ecs update-service \
             --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
             --service ${{ secrets.ECS_SERVICE_NAME }} \
