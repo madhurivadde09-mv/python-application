@@ -7,3 +7,10 @@ __pycache__/
 .ruff_cache/
 .env
 *.log
+
+# Ignore Terraform state files
+*.tfstate
+*.tfstate.backup
+
+# Ignore CLI crash logs
+crash.log
