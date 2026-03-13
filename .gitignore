@@ -11,6 +11,4 @@ __pycache__/
 # Ignore Terraform state files
 *.tfstate
 *.tfstate.backup
-
-# Ignore CLI crash logs
-crash.log
+.terraform/
