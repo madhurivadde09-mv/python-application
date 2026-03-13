@@ -1,5 +1,5 @@
 {
-  "family": "fastapi-task",
+  "family": "fastapi-task",      <-- your custom ECS task name
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
