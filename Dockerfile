@@ -17,4 +17,8 @@ COPY app ./app
 
 EXPOSE 8000
 
+<<<<<<< HEAD
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+=======
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+>>>>>>> 0c759697c0256b9991f5039d5b23a19e7ea23842
