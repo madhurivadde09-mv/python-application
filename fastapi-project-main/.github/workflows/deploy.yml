@@ -1,51 +1,88 @@
-build-and-push:
-  needs: build
-  runs-on: ubuntu-latest
+name: Deploy
 
-  steps:
-    - uses: actions/checkout@v4
+on:
+  push:
+    branches: [ main ]
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+jobs:
 
-    - name: Login to ECR
-      id: ecr
-      uses: aws-actions/amazon-ecr-login@v2
+  lint-and-test:
+    runs-on: ubuntu-latest
 
-    - name: Build and push Docker image
-      env:
-        ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
-        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Download current task definition
-      run: |
-        aws ecs describe-task-definition \
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt pytest ruff httpx
+
+      - name: Lint (ruff)
+        run: ruff check app tests
+
+      - name: Test (pytest)
+        run: pytest tests/ -v
+
+  build:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t fastapi-app:${{ github.sha }} .
+
+  build-and-push:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
           --task-definition ${{ secrets.TASK_DEFINITION }} \
           --query taskDefinition \
           > task-definition.json
 
-    - name: Update task definition image
-      id: render
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: task-definition.json
-        container-name: fastapi-app
-        image: ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+      - name: Update task definition image
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: fastapi-app
+          image: ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-    - name: Deploy to ECS
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.render.outputs.task-definition }}
-        service: ${{ secrets.ECS_SERVICE_NAME }}
-        cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-        wait-for-service-stability: true
-            
-# Trigger GitHub Actions workflow -1
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE_NAME }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
