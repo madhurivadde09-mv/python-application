@@ -36,3 +36,4 @@ jobs:
           service: fastapi-service              # ECS service name
           cluster: fastapi-cluster              # ECS cluster name
           wait-for-service-stability: true
+          force-new-deployment: true                # ensures ECS updates service
